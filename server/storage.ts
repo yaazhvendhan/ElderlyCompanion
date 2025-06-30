@@ -1,195 +1,205 @@
 import { 
-  reminders, memories, chatMessages, emergencyContacts,
+  userProfiles, reminders, memories, chatMessages, emergencyContacts, medications,
+  type UserProfile, type InsertUserProfile,
   type Reminder, type InsertReminder,
   type Memory, type InsertMemory,
   type ChatMessage, type InsertChatMessage,
-  type EmergencyContact, type InsertEmergencyContact
+  type EmergencyContact, type InsertEmergencyContact,
+  type Medication, type InsertMedication
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
+  // User Profile
+  getUserProfile(id?: number): Promise<UserProfile | undefined>;
+  createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
+  updateUserProfile(id: number, profile: Partial<UserProfile>): Promise<UserProfile>;
+  
   // Reminders
-  getReminders(): Promise<Reminder[]>;
-  getTodayReminders(): Promise<Reminder[]>;
-  createReminder(reminder: InsertReminder): Promise<Reminder>;
+  getReminders(userId?: number): Promise<Reminder[]>;
+  getTodayReminders(userId?: number): Promise<Reminder[]>;
+  createReminder(reminder: InsertReminder, userId?: number): Promise<Reminder>;
   updateReminder(id: number, reminder: Partial<Reminder>): Promise<Reminder>;
   deleteReminder(id: number): Promise<void>;
   
   // Memories
-  getMemories(): Promise<Memory[]>;
-  createMemory(memory: InsertMemory): Promise<Memory>;
+  getMemories(userId?: number): Promise<Memory[]>;
+  createMemory(memory: InsertMemory, userId?: number): Promise<Memory>;
   deleteMemory(id: number): Promise<void>;
   
   // Chat Messages
-  getChatMessages(): Promise<ChatMessage[]>;
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  clearChatHistory(): Promise<void>;
+  getChatMessages(userId?: number): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage, userId?: number): Promise<ChatMessage>;
+  clearChatHistory(userId?: number): Promise<void>;
   
   // Emergency Contacts
-  getEmergencyContacts(): Promise<EmergencyContact[]>;
-  createEmergencyContact(contact: InsertEmergencyContact): Promise<EmergencyContact>;
+  getEmergencyContacts(userId?: number): Promise<EmergencyContact[]>;
+  createEmergencyContact(contact: InsertEmergencyContact, userId?: number): Promise<EmergencyContact>;
   updateEmergencyContact(id: number, contact: Partial<EmergencyContact>): Promise<EmergencyContact>;
   deleteEmergencyContact(id: number): Promise<void>;
+  
+  // Medications
+  getMedications(userId?: number): Promise<Medication[]>;
+  createMedication(medication: InsertMedication, userId?: number): Promise<Medication>;
+  updateMedication(id: number, medication: Partial<Medication>): Promise<Medication>;
+  deleteMedication(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private reminders: Map<number, Reminder>;
-  private memories: Map<number, Memory>;
-  private chatMessages: Map<number, ChatMessage>;
-  private emergencyContacts: Map<number, EmergencyContact>;
-  private currentId: number;
+export class DatabaseStorage implements IStorage {
+  private defaultUserId = 1; // Default user for single-user mode
 
-  constructor() {
-    this.reminders = new Map();
-    this.memories = new Map();
-    this.chatMessages = new Map();
-    this.emergencyContacts = new Map();
-    this.currentId = 1;
-    
-    // Initialize with default emergency contacts
-    this.initializeDefaultData();
+  // User Profile
+  async getUserProfile(id = this.defaultUserId): Promise<UserProfile | undefined> {
+    const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.id, id));
+    return profile;
   }
 
-  private initializeDefaultData() {
-    const defaultContacts: InsertEmergencyContact[] = [
-      { name: "Emergency Services", phone: "911", relationship: "Emergency" },
-      { name: "Sarah", phone: "(555) 123-4567", relationship: "Granddaughter" },
-      { name: "Dr. Smith", phone: "(555) 456-7890", relationship: "Doctor" },
-    ];
+  async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
+    const [newProfile] = await db.insert(userProfiles).values(profile).returning();
+    return newProfile;
+  }
 
-    defaultContacts.forEach(contact => {
-      const id = this.currentId++;
-      const fullContact: EmergencyContact = { 
-        ...contact, 
-        id,
-      };
-      this.emergencyContacts.set(id, fullContact);
-    });
+  async updateUserProfile(id: number, profile: Partial<UserProfile>): Promise<UserProfile> {
+    const [updated] = await db.update(userProfiles)
+      .set(profile)
+      .where(eq(userProfiles.id, id))
+      .returning();
+    if (!updated) throw new Error("Profile not found");
+    return updated;
   }
 
   // Reminders
-  async getReminders(): Promise<Reminder[]> {
-    return Array.from(this.reminders.values()).sort((a, b) => 
-      new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()
-    );
+  async getReminders(userId = this.defaultUserId): Promise<Reminder[]> {
+    return await db.select().from(reminders)
+      .where(eq(reminders.userId, userId))
+      .orderBy(desc(reminders.createdAt));
   }
 
-  async getTodayReminders(): Promise<Reminder[]> {
+  async getTodayReminders(userId = this.defaultUserId): Promise<Reminder[]> {
     const today = new Date().toISOString().split('T')[0];
-    const currentTime = new Date();
     
-    return Array.from(this.reminders.values()).filter(reminder => {
-      if (!reminder.isActive) return false;
-      
-      if (reminder.frequency === 'once') {
-        return reminder.date === today;
-      } else if (reminder.frequency === 'daily') {
-        return true;
-      } else if (reminder.frequency === 'weekly') {
-        const dayOfWeek = currentTime.getDay();
-        // For demo, show weekly reminders on specific day (can be enhanced)
-        return dayOfWeek === 1; // Mondays
-      }
-      return false;
-    }).sort((a, b) => a.time.localeCompare(b.time));
+    return await db.select().from(reminders)
+      .where(and(
+        eq(reminders.userId, userId),
+        eq(reminders.isActive, true)
+      ))
+      .orderBy(reminders.time);
   }
 
-  async createReminder(insertReminder: InsertReminder): Promise<Reminder> {
-    const id = this.currentId++;
-    const reminder: Reminder = {
-      ...insertReminder,
-      id,
-      isCompleted: false,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.reminders.set(id, reminder);
-    return reminder;
+  async createReminder(reminder: InsertReminder, userId = this.defaultUserId): Promise<Reminder> {
+    const [newReminder] = await db.insert(reminders)
+      .values({ ...reminder, userId })
+      .returning();
+    return newReminder;
   }
 
-  async updateReminder(id: number, update: Partial<Reminder>): Promise<Reminder> {
-    const reminder = this.reminders.get(id);
-    if (!reminder) throw new Error("Reminder not found");
-    
-    const updated = { ...reminder, ...update };
-    this.reminders.set(id, updated);
+  async updateReminder(id: number, reminder: Partial<Reminder>): Promise<Reminder> {
+    const [updated] = await db.update(reminders)
+      .set(reminder)
+      .where(eq(reminders.id, id))
+      .returning();
+    if (!updated) throw new Error("Reminder not found");
     return updated;
   }
 
   async deleteReminder(id: number): Promise<void> {
-    this.reminders.delete(id);
+    await db.delete(reminders).where(eq(reminders.id, id));
   }
 
   // Memories
-  async getMemories(): Promise<Memory[]> {
-    return Array.from(this.memories.values()).sort((a, b) => 
-      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    );
+  async getMemories(userId = this.defaultUserId): Promise<Memory[]> {
+    return await db.select().from(memories)
+      .where(eq(memories.userId, userId))
+      .orderBy(desc(memories.createdAt));
   }
 
-  async createMemory(insertMemory: InsertMemory): Promise<Memory> {
-    const id = this.currentId++;
-    const memory: Memory = {
-      ...insertMemory,
-      id,
-      createdAt: new Date(),
-    };
-    this.memories.set(id, memory);
-    return memory;
+  async createMemory(memory: InsertMemory, userId = this.defaultUserId): Promise<Memory> {
+    const [newMemory] = await db.insert(memories)
+      .values({ ...memory, userId })
+      .returning();
+    return newMemory;
   }
 
   async deleteMemory(id: number): Promise<void> {
-    this.memories.delete(id);
+    await db.delete(memories).where(eq(memories.id, id));
   }
 
   // Chat Messages
-  async getChatMessages(): Promise<ChatMessage[]> {
-    return Array.from(this.chatMessages.values()).sort((a, b) => 
-      new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()
-    );
+  async getChatMessages(userId = this.defaultUserId): Promise<ChatMessage[]> {
+    return await db.select().from(chatMessages)
+      .where(eq(chatMessages.userId, userId))
+      .orderBy(chatMessages.createdAt);
   }
 
-  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const id = this.currentId++;
-    const message: ChatMessage = {
-      ...insertMessage,
-      id,
-      createdAt: new Date(),
-    };
-    this.chatMessages.set(id, message);
-    return message;
+  async createChatMessage(message: InsertChatMessage, userId = this.defaultUserId): Promise<ChatMessage> {
+    const [newMessage] = await db.insert(chatMessages)
+      .values({ ...message, userId })
+      .returning();
+    return newMessage;
   }
 
-  async clearChatHistory(): Promise<void> {
-    this.chatMessages.clear();
+  async clearChatHistory(userId = this.defaultUserId): Promise<void> {
+    await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
   }
 
   // Emergency Contacts
-  async getEmergencyContacts(): Promise<EmergencyContact[]> {
-    return Array.from(this.emergencyContacts.values());
+  async getEmergencyContacts(userId = this.defaultUserId): Promise<EmergencyContact[]> {
+    return await db.select().from(emergencyContacts)
+      .where(eq(emergencyContacts.userId, userId));
   }
 
-  async createEmergencyContact(insertContact: InsertEmergencyContact): Promise<EmergencyContact> {
-    const id = this.currentId++;
-    const contact: EmergencyContact = {
-      ...insertContact,
-      id,
-    };
-    this.emergencyContacts.set(id, contact);
-    return contact;
+  async createEmergencyContact(contact: InsertEmergencyContact, userId = this.defaultUserId): Promise<EmergencyContact> {
+    const [newContact] = await db.insert(emergencyContacts)
+      .values({ ...contact, userId })
+      .returning();
+    return newContact;
   }
 
-  async updateEmergencyContact(id: number, update: Partial<EmergencyContact>): Promise<EmergencyContact> {
-    const contact = this.emergencyContacts.get(id);
-    if (!contact) throw new Error("Emergency contact not found");
-    
-    const updated = { ...contact, ...update };
-    this.emergencyContacts.set(id, updated);
+  async updateEmergencyContact(id: number, contact: Partial<EmergencyContact>): Promise<EmergencyContact> {
+    const [updated] = await db.update(emergencyContacts)
+      .set(contact)
+      .where(eq(emergencyContacts.id, id))
+      .returning();
+    if (!updated) throw new Error("Emergency contact not found");
     return updated;
   }
 
   async deleteEmergencyContact(id: number): Promise<void> {
-    this.emergencyContacts.delete(id);
+    await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
+  }
+
+  // Medications
+  async getMedications(userId = this.defaultUserId): Promise<Medication[]> {
+    return await db.select().from(medications)
+      .where(and(
+        eq(medications.userId, userId),
+        eq(medications.isActive, true)
+      ))
+      .orderBy(medications.name);
+  }
+
+  async createMedication(medication: InsertMedication, userId = this.defaultUserId): Promise<Medication> {
+    const [newMedication] = await db.insert(medications)
+      .values({ ...medication, userId })
+      .returning();
+    return newMedication;
+  }
+
+  async updateMedication(id: number, medication: Partial<Medication>): Promise<Medication> {
+    const [updated] = await db.update(medications)
+      .set(medication)
+      .where(eq(medications.id, id))
+      .returning();
+    if (!updated) throw new Error("Medication not found");
+    return updated;
+  }
+
+  async deleteMedication(id: number): Promise<void> {
+    await db.update(medications)
+      .set({ isActive: false })
+      .where(eq(medications.id, id));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

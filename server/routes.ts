@@ -1,9 +1,42 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertReminderSchema, insertMemorySchema, insertChatMessageSchema } from "@shared/schema";
+import { 
+  insertUserProfileSchema, insertReminderSchema, insertMemorySchema, 
+  insertChatMessageSchema, insertEmergencyContactSchema, insertMedicationSchema 
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // User Profile
+  app.get("/api/profile", async (req, res) => {
+    try {
+      const profile = await storage.getUserProfile();
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.post("/api/profile", async (req, res) => {
+    try {
+      const validatedData = insertUserProfileSchema.parse(req.body);
+      const profile = await storage.createUserProfile(validatedData);
+      res.json(profile);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid profile data" });
+    }
+  });
+
+  app.patch("/api/profile/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const profile = await storage.updateUserProfile(id, req.body);
+      res.json(profile);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update profile" });
+    }
+  });
+
   // Reminders
   app.get("/api/reminders", async (req, res) => {
     try {
@@ -105,6 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Thank you for sharing that with me. Is there anything I can help you with?",
           "I appreciate you telling me that. Would you like to hear a motivational quote?",
           "That sounds lovely! Remember to take care of yourself today.",
+          "I'm here to listen. Tell me more about what's on your mind.",
+          "Your well-being is important to me. How can I assist you today?",
         ];
         const response = responses[Math.floor(Math.random() * responses.length)];
         
@@ -122,6 +157,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/chat", async (req, res) => {
+    try {
+      await storage.clearChatHistory();
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to clear chat history" });
+    }
+  });
+
   // Emergency Contacts
   app.get("/api/emergency-contacts", async (req, res) => {
     try {
@@ -129,6 +173,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(contacts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch emergency contacts" });
+    }
+  });
+
+  app.post("/api/emergency-contacts", async (req, res) => {
+    try {
+      const validatedData = insertEmergencyContactSchema.parse(req.body);
+      const contact = await storage.createEmergencyContact(validatedData);
+      res.json(contact);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid emergency contact data" });
+    }
+  });
+
+  app.patch("/api/emergency-contacts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const contact = await storage.updateEmergencyContact(id, req.body);
+      res.json(contact);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update emergency contact" });
+    }
+  });
+
+  app.delete("/api/emergency-contacts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteEmergencyContact(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete emergency contact" });
+    }
+  });
+
+  // Medications
+  app.get("/api/medications", async (req, res) => {
+    try {
+      const medications = await storage.getMedications();
+      res.json(medications);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch medications" });
+    }
+  });
+
+  app.post("/api/medications", async (req, res) => {
+    try {
+      const validatedData = insertMedicationSchema.parse(req.body);
+      const medication = await storage.createMedication(validatedData);
+      res.json(medication);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid medication data" });
+    }
+  });
+
+  app.patch("/api/medications/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const medication = await storage.updateMedication(id, req.body);
+      res.json(medication);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update medication" });
+    }
+  });
+
+  app.delete("/api/medications/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteMedication(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to delete medication" });
     }
   });
 

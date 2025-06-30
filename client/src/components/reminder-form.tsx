@@ -81,7 +81,7 @@ export default function ReminderForm() {
     createReminderMutation.mutate(reminderData);
   };
 
-  const handleVoiceInput = (field: string) => {
+  const handleVoiceInput = (field: "title" | "description") => {
     startListening((transcript) => {
       form.setValue(field, transcript);
     });

@@ -3,29 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 98%);
-  --foreground: hsl(222, 84%, 4.9%);
+  --background: hsl(210, 20%, 98%);
+  --foreground: hsl(230, 30%, 15%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(230, 30%, 15%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(222, 84%, 4.9%);
-  --primary: hsl(197, 37%, 45%);
-  --primary-foreground: hsl(210, 40%, 98%);
-  --secondary: hsl(39, 78%, 68%);
-  --secondary-foreground: hsl(222, 47%, 11%);
-  --muted: hsl(210, 40%, 96%);
-  --muted-foreground: hsl(215, 16%, 46%);
-  --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(222, 47%, 11%);
-  --destructive: hsl(0, 84%, 60%);
-  --destructive-foreground: hsl(210, 40%, 98%);
-  --success: hsl(171, 53%, 40%);
-  --success-foreground: hsl(210, 40%, 98%);
-  --warning: hsl(12, 76%, 61%);
-  --warning-foreground: hsl(210, 40%, 98%);
-  --border: hsl(214, 32%, 91%);
-  --input: hsl(214, 32%, 91%);
-  --ring: hsl(197, 37%, 45%);
+  --popover-foreground: hsl(230, 30%, 15%);
+  --primary: hsl(210, 60%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(150, 40%, 80%);
+  --secondary-foreground: hsl(230, 30%, 15%);
+  --muted: hsl(210, 20%, 95%);
+  --muted-foreground: hsl(230, 10%, 45%);
+  --accent: hsl(210, 20%, 95%);
+  --accent-foreground: hsl(230, 30%, 15%);
+  --destructive: hsl(0, 70%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --success: hsl(140, 50%, 50%);
+  --success-foreground: hsl(0, 0%, 100%);
+  --warning: hsl(35, 80%, 60%);
+  --warning-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 20%, 90%);
+  --input: hsl(210, 20%, 95%);
+  --ring: hsl(210, 60%, 60%);
   --radius: 0.75rem;
 }
 
@@ -60,6 +60,8 @@
     @apply bg-background text-foreground font-sans;
     font-size: 20px;
     line-height: 1.6;
+    background: linear-gradient(135deg, hsl(210, 20%, 98%) 0%, hsl(210, 15%, 96%) 100%);
+    min-height: 100vh;
   }
   
   /* Accessibility improvements */
@@ -91,7 +93,17 @@
   
   /* Gentle shadow */
   .gentle-shadow {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Enhanced shadows for better depth */
+  .elevated-shadow {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Warm background for cards */
+  .warm-card {
+    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(210, 20%, 99%) 100%);
   }
   
   /* Notification animations */
