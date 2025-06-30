@@ -1,0 +1,58 @@
+🧩 Prompt to Create the Digital Elderly Assistant App (on Replit)
+Create a web application called Digital Elderly Assistant that is gentle, simple, and accessible for elderly users. The app should have a clean UI with large buttons, easy navigation, and minimal clutter. It should include the following features:
+
+🛠️ Core Features:
+1. 📝 Task & Reminder Upload:
+Allow users to upload tasks (e.g., doctor appointments, daily chores) and medicine schedules.
+
+Support input through text forms and optionally voice input (use Web Speech API or any browser-compatible package).
+
+Users can set:
+
+Title of the task/medicine
+
+Description
+
+Frequency (once, daily, weekly)
+
+Time (e.g., “9:00 AM”)
+
+2. 🔔 Scheduled Notifications:
+Use a scheduler (setInterval in frontend or Python’s schedule module if backend exists) to send real-time alerts to the user.
+
+Display a soft pop-up or play a gentle sound when it’s time.
+
+If a reminder is missed, display an option like “Remind me again in 10 minutes.”
+
+3. 💬 Memory Board:
+A section where the assistant stores important notes or personal mentions from the user.
+
+Show messages like: “You mentioned you enjoy gardening. Don’t forget to water your plants today.”
+
+4. 🌤️ Mood & Companion Mode:
+Add a companion mode: A chatbot that offers kind conversations or reads motivational quotes aloud.
+
+Bonus: Let it detect sad or anxious keywords and respond warmly.
+
+Optional: Connect to calming features like nature sounds or soft music.
+
+5. 🧠 Settings for Caregivers:
+Add a protected section where caregivers can:
+
+View tasks & history
+
+Add/edit reminders for the user
+
+Get notifications if a reminder is consistently ignored
+
+6. 📱 Responsive Design:
+UI should be mobile-friendly with large fonts, high contrast, and screen reader support.
+
+✅ Tech Stack Recommendation:
+Frontend: HTML + TailwindCSS / Bootstrap + JavaScript (or React if you're comfortable)
+
+Backend (optional): Python Flask or Node.js
+
+Notifications: Browser-based (Notification API) or local storage-based
+
+Storage: Use localStorage for prototype, upgrade to Firebase or SQLite later
