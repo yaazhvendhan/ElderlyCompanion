@@ -14,6 +14,7 @@ export const userProfiles = pgTable("user_profiles", {
   caregiverCode: text("caregiver_code").default("1234"),
   preferences: text("preferences"), // JSON string
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const reminders = pgTable("reminders", {
@@ -27,6 +28,7 @@ export const reminders = pgTable("reminders", {
   isCompleted: boolean("is_completed").default(false),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const memories = pgTable("memories", {
